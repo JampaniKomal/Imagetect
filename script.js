@@ -104,6 +104,11 @@ $(document).ready(function () {
                 const processCompressionStep = () => {
                     canvas.width = Math.round(currentWidth);
                     canvas.height = Math.round(currentHeight);
+                    // JPEG output has no alpha channel; without this, any
+                    // transparent source pixels render as black instead of
+                    // the original image's transparent background.
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                     let minQuality = 0;
@@ -184,7 +189,11 @@ $(document).ready(function () {
         const sizeInMB = (sizeInKB / 1024).toFixed(2);
         $('#compressedSize').text(`Size: ${sizeInKB} KB / ${sizeInMB} MB`);
         
-        const defaultName = `compressed_${originalFile.name}`;
+        // Output is always re-encoded as JPEG, regardless of the source
+        // format, so the filename must always end in .jpg - keeping the
+        // original extension (e.g. .png) would mislabel the actual content.
+        const originalBaseName = originalFile.name.replace(/\.[^/.]+$/, '');
+        const defaultName = `compressed_${originalBaseName}.jpg`;
         const outputNameInput = $('#outputFileName');
         const downloadLink = $('#downloadLink');
 
@@ -197,9 +206,8 @@ $(document).ready(function () {
         outputNameInput.on('keyup', function() {
             let customName = $(this).val().trim();
             if (customName) {
-                const originalExtension = originalFile.name.slice(originalFile.name.lastIndexOf('.'));
                 if (!customName.includes('.')) {
-                    customName += originalExtension;
+                    customName += '.jpg';
                 }
                 downloadLink.attr('download', customName);
             } else {

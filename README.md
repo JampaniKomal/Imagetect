@@ -4,8 +4,6 @@
 
 Imagetect is a versatile, client-side web application designed to provide a suite of powerful image manipulation tools. Built with simplicity and efficiency in mind, it allows users to perform various image processing tasks directly in their browser, ensuring privacy and speed as no files are uploaded to a server.
 
-This project was developed with assistance from an AI programming partner.
-
 ## Current Features
 
 *   **Image Compressor:** Upload an image and specify a target size (in KB or MB). Imagetect uses a sophisticated algorithm to compress the image to meet your exact requirements, providing a preview of both the original and compressed versions.
@@ -23,7 +21,43 @@ This project was developed with assistance from an AI programming partner.
 
 *   **Frontend:** HTML5, CSS3, JavaScript
 *   **Libraries:** jQuery
-*   **Development Assistance:** AI-powered code generation and analysis.
+
+## Testing & Verification
+
+The compressor was actually exercised in a real browser (Playwright,
+served locally), not just read: uploaded a real image with a
+transparent background, set a target size well below the original,
+and inspected the actual output pixels and downloaded filename.
+
+That run surfaced two real bugs, both fixed:
+
+- **Transparency silently became solid black.** Output is always
+  re-encoded as JPEG, which has no alpha channel. The canvas used for
+  re-encoding was never explicitly filled before drawing the source
+  image onto it, so any originally-transparent pixels rendered as
+  black (a browser canvas's default backing color) once flattened to
+  JPEG — a logo or icon with a transparent background would come out
+  looking broken. Fixed by filling the canvas white before drawing,
+  the standard convention for flattening transparency to a
+  non-alpha format.
+- **Downloaded files kept the wrong extension.** The output filename
+  always preserved the original file's extension (e.g. `photo.png` ->
+  `compressed_photo.png`), but the actual file content is always
+  JPEG-encoded regardless of the source format — so a "PNG" download
+  was actually JPEG data under a mismatched extension. Fixed the
+  default filename and the custom-filename fallback to use `.jpg`.
+
+## Known Limitations
+
+- Always re-encodes to JPEG; there's no option to preserve the
+  original format or to compress losslessly.
+- Very small target sizes on large images fall back to aggressively
+  downscaling (down to as little as 10x10px) to hit the target,
+  which can produce a barely-recognizable result — this is an
+  inherent tradeoff of the size-first compression approach, not a
+  bug, but worth knowing before setting an unrealistic target.
+- No automated test suite — verification was exercising the real app
+  in a real browser.
 
 ## Future Development
 
@@ -33,6 +67,10 @@ Imagetect is designed to be an expandable platform for image utilities. Future u
 *   **Bulk Resizer:** Resize multiple images to specific dimensions at once.
 *   **Watermarking Tool:** Add custom text or image watermarks to your pictures.
 *   **Filter Library:** Apply a variety of filters and effects.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ---
 
